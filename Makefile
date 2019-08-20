@@ -1,6 +1,6 @@
 mbr: src/*.rs src/*.S i386.json ./linker.ld
 	RUST_TARGET_PATH=$(shell pwd) xargo build --target i386 --release
-	objcopy -O binary -j .text -j .rodata -j .signature ./target/i386/release/xv6-rs ./mbr
+	objcopy -O binary -j .text -j .rodata -j .signature ./target/i386/release/ruxv6 ./mbr
 
 xv6.img: mbr kernel
 	dd if=/dev/zero of=xv6.img count=10000
