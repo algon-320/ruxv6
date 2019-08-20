@@ -1,6 +1,6 @@
 # ruxv6
 
-Objective: reimplement [xv6 OS](https://github.com/mit-pdos/xv6-public) in Rust.
+Goal: reimplement [xv6 OS](https://github.com/mit-pdos/xv6-public) in Rust.
 
 ## Requirements
 
@@ -12,14 +12,6 @@ Objective: reimplement [xv6 OS](https://github.com/mit-pdos/xv6-public) in Rust.
 - (QEMU)
 
 ## Execution
-
-You can try this OS on QEMU by following command.
-
-```
-$ make qemu
-```
-
----
 
 **Currently, first you have to build [xv6-public](https://github.com/mit-pdos/xv6-public), then copy `kernel` and `fs.img` to the root of this project.**
 
@@ -34,3 +26,11 @@ $ cp kernel fs.img .
 ```
 
 </details>
+
+---
+
+You can try this OS on QEMU by following command.
+
+```
+$ make qemu
+```
