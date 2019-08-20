@@ -1,2 +1,7 @@
+.vscode/
 /target
 **/*.rs.bk
+kernel
+mbr
+xv6.img
+fs.img
