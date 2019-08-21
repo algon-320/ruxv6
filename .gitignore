@@ -1,7 +1,7 @@
 .vscode/
-/target
+**/target
 **/*.rs.bk
-kernel
-mbr
+kernel/kernel
+bootloader/mbr
 xv6.img
 fs.img
