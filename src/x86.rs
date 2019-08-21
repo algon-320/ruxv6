@@ -14,10 +14,12 @@ pub fn inb(port: u16) -> u8 {
 
 // read cnt double-words from the port
 #[inline]
-pub fn insl(port: u16, mut addr: *mut u32, mut cnt: u32) {
+pub fn insl(port: u16, addr: *mut u32, cnt: usize) {
+    let mut _addr = addr;
+    let mut _cnt = cnt;
     unsafe {
         asm!("cld; rep insl"
-            : "+{edi}"(addr), "+{ecx}"(cnt)
+            : "+{edi}"(_addr), "+{ecx}"(_cnt)
             : "{dx}"(port)
             : "memory", "cc"
             : "volatile");
@@ -50,10 +52,12 @@ pub fn outw(port: u16, data: u16) {
 
 // write cnt double-words from the addr to the port
 #[inline]
-pub fn outsl(port: u16, mut addr: *const u32, mut cnt: u32) {
+pub fn outsl(port: u16, addr: *const u32, cnt: usize) {
+    let mut _addr = addr;
+    let mut _cnt = cnt;
     unsafe {
         asm!("cld; rep outsl"
-            : "+{esi}"(addr), "+{ecx}"(cnt)
+            : "+{esi}"(_addr), "+{ecx}"(_cnt)
             : "{dx}"(port)
             : "cc"
             : "volatile");
@@ -62,10 +66,12 @@ pub fn outsl(port: u16, mut addr: *const u32, mut cnt: u32) {
 
 // write the byte (data) to the address (cnt times repeatedly)
 #[inline]
-pub fn stosb(mut addr: *const u8, data: u8, mut cnt: u32) {
+pub fn stosb(addr: *const u8, data: u8, cnt: usize) {
+    let mut _addr = addr;
+    let mut _cnt = cnt;
     unsafe {
         asm!("cld; rep stosb"
-            : "+{edi}"(addr), "+{ecx}"(cnt)
+            : "+{edi}"(_addr), "+{ecx}"(_cnt)
             : "{al}"(data)
             : "memory", "cc"
             : "volatile");
@@ -74,10 +80,12 @@ pub fn stosb(mut addr: *const u8, data: u8, mut cnt: u32) {
 
 // write the double word (data) to the address (cnt times repeatedly)
 #[inline]
-pub fn stosl(mut addr: *const u8, data: u32, mut cnt: u32) {
+pub fn stosl(addr: *const u8, data: u32, cnt: usize) {
+    let mut _addr = addr;
+    let mut _cnt = cnt;
     unsafe {
         asm!("cld; rep stosl"
-            : "+{edi}"(addr), "+{ecx}"(cnt)
+            : "+{edi}"(_addr), "+{ecx}"(_cnt)
             : "{eax}"(data)
             : "memory", "cc"
             : "volatile");
