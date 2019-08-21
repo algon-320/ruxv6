@@ -6,17 +6,17 @@ IPLBASE = 0x7c00;
 SECTIONS {
     . = IPLBASE;
     .text : {
-      . = ALIGN(4);
-      *(.text)
-      *(.text.*)
+        . = ALIGN(4);
+        *(.text)
+        *(.text.*)
     }
     .rodata : {
-      . = ALIGN(4);
-      *(.rodata)
-      *(.rodata.*)
+        . = ALIGN(4);
+        *(.rodata)
+        *(.rodata.*)
     }
     . = IPLBASE + 510;
     .signature : {
-      SHORT(0xaa55)
+        SHORT(0xaa55)
     }
 }
