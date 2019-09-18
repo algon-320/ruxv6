@@ -11,3 +11,6 @@ edition = "2018"
 [profile.release]
 opt-level = "z"
 lto = true
+
+[package.metadata.cargo-xbuild]
+sysroot-target = "../sysroot"

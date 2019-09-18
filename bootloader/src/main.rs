@@ -65,7 +65,7 @@ pub unsafe extern "C" fn bootmain() {
         ph_ptr = ph_ptr.offset(1);
     }
 
-    print(b"kernel load ok");
+    print(b"kernel load ok !");
 
     // Call the entry point from the ELF header.
     // Does not return !

@@ -17,6 +17,6 @@ SECTIONS {
     }
     . = IPLBASE + 510;
     .signature : {
-        SHORT(0xaa55)
+        SHORT(0xaa55);
     }
 }

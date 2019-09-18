@@ -1,4 +1,5 @@
 .vscode/
+sysroot/
 **/target
 **/*.rs.bk
 kernel/kernel
