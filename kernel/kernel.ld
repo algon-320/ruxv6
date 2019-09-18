@@ -3,8 +3,7 @@ OUTPUT_ARCH(i386)
 ENTRY(_start)
 
 SECTIONS {
-    /* Link the kernel at this address: "." means the current address */
-        /* Must be equal to KERNLINK */
+    /* Must be equal to KERNLINK */
     . = 0x80100000;
 
     .text : AT(0x100000) {
@@ -12,7 +11,7 @@ SECTIONS {
     }
 
     PROVIDE(etext = .);	/* Define the 'etext' symbol to this value */
-    
+
     .rodata : {
         *(.rodata .rodata.* .gnu.linkonce.r.*)
     }
@@ -38,6 +37,8 @@ SECTIONS {
 
     /* The data segment */
     .data : {
+        . = ALIGN(4096);
+        *(.data.entrypgdir)
         *(.data)
     }
 

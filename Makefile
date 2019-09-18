@@ -1,12 +1,12 @@
-xv6.img: bootloader/mbr kernel/kernel
+xv6.img: mbr_dummy kernel_dummy
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootloader/mbr of=xv6.img conv=notrunc
 	dd if=kernel/kernel of=xv6.img seek=1 conv=notrunc
 
-bootloader/mbr: bootloader/src/*
+mbr_dummy:
 	make -C bootloader mbr
 
-kernel/kernel: kernel/src/*
+kernel_dummy:
 	make -C kernel kernel
 
 qemu: xv6.img fs.img
