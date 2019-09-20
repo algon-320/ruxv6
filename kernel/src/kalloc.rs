@@ -3,11 +3,11 @@ use crate::utils::address::{paddr, paddr_pg, vaddr, vaddr_pg};
 
 #[repr(C)]
 struct Run {
-    next: vaddr,
+    next: vaddr_pg,
 }
 
 lazy_static! {
-    static ref freelist: Mutex<vaddr> = Mutex::new(vaddr::new());
+    static ref freelist: Mutex<vaddr_pg> = Mutex::new(vaddr_pg::new());
 }
 
 const PGSIZE: usize = 4096;
@@ -38,7 +38,7 @@ pub fn kinit1(start: vaddr, end: vaddr) {
 
         // the first page (end of freelist)
         let r = ptr.as_ptr::<Run>();
-        assert_eq!((*r).next.as_raw(), 0);
+        assert!((*r).next.is_null());
         ptr.increase(PGSIZE);
 
         // check other pages
@@ -75,12 +75,13 @@ fn freerange(start: vaddr_pg, end: vaddr_pg) {
 extern "C" {
     static kernel_end: usize;
 }
+lazy_static! {
+    static ref kernel_end_addr: usize = unsafe { &kernel_end as *const usize as usize };
+}
 
 pub fn kfree(v: vaddr_pg) {
-    let end_ptr = unsafe { &kernel_end as *const usize as usize };
-    let p: Option<paddr_pg> = v.into();
-    let p = p.unwrap();
-    if v.as_raw() < end_ptr || p.as_raw() >= PHYSTOP {
+    let p = Into::<Option<paddr_pg>>::into(v).unwrap();
+    if v.as_raw() < *kernel_end_addr || p.as_raw() >= PHYSTOP {
         panic!("kfree");
     }
 
@@ -101,14 +102,18 @@ pub fn kfree(v: vaddr_pg) {
     }
 }
 
-pub fn kalloc() -> vaddr {
+// return Some(address) if there is an available page, otherwise None
+pub fn kalloc() -> Option<vaddr_pg> {
     let r: *const Run;
     {
         let mut tmp = freelist.lock();
-        r = tmp.as_ptr();
+        if tmp.is_null() {
+            return None;
+        }
+        r = (*tmp).as_ptr();
         unsafe {
             *tmp = (*r).next;
         }
     }
-    vaddr::from_raw(r as usize).unwrap()
+    Some(vaddr_pg::from_raw(r as usize).unwrap())
 }

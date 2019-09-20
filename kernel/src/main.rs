@@ -22,6 +22,7 @@ mod vga_buffer;
 
 // mod console;
 mod kalloc;
+mod vm;
 // mod proc;
 // mod spinlock;
 mod x86;

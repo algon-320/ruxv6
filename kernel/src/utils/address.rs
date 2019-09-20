@@ -1,11 +1,11 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Virtual;
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Physical;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct UnAligned;
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PageAligned;
 
 pub trait Align {
@@ -28,7 +28,7 @@ impl Align for PageAligned {
 use core::marker::PhantomData;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Address<T, A> {
+pub struct Address<T, A: Align> {
     addr: usize,
     phantom: PhantomData<(A, T)>,
 }
