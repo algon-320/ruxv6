@@ -13,4 +13,4 @@ opt-level = "z"
 lto = true
 
 [package.metadata.cargo-xbuild]
-sysroot-target = "../sysroot"
+sysroot_path = "../sysroot"
