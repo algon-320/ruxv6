@@ -48,7 +48,7 @@ SECTIONS {
         *(.bss)
     }
 
-    PROVIDE(end = .);
+    PROVIDE(kernel_end = .);
 
     /DISCARD/ : {
         *(.eh_frame .note.GNU-stack)

@@ -15,7 +15,7 @@ impl SpinLock {
         SpinLock {
             locked: false,
             name: None,
-            cpu: CPU::default(),
+            cpu: CPU::new(),
             pcs: [0; 10],
         }
     }
@@ -56,8 +56,8 @@ impl SpinLock {
 // it takes two popcli to undo two pushcli.  Also, if interrupts
 // are off, then pushcli, popcli leaves them off.
 fn pushcli() {
-    let eflags = x86::readflags();
-    x86::cli();
+    // let eflags = x86::readflags();
+    // x86::cli();
     unimplemented!()
 }
 fn popcli() {

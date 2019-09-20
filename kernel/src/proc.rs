@@ -1,8 +1,13 @@
-use super::console::{console, Console};
 use super::x86::{self, EFlags};
 
 #[derive(Default, Debug)]
 pub struct CPU {}
+
+impl CPU {
+    pub fn new() -> Self {
+        CPU {}
+    }
+}
 
 // Must be called with interrupts disabled to avoid the caller being
 // rescheduled between reading lapicid and running through the loop.
