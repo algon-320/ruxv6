@@ -99,3 +99,12 @@ pub type paddr = Address<Physical, UnAligned>;
 
 pub type vaddr_pg = Address<Virtual, PageAligned>;
 pub type paddr_pg = Address<Physical, PageAligned>;
+
+#[inline]
+pub fn v2p<A: Align>(v: Address<Virtual, A>) -> Address<Physical, A> {
+    Into::<Option<Address<Physical, A>>>::into(v).unwrap()
+}
+#[inline]
+pub fn p2v<A: Align>(p: Address<Physical, A>) -> Address<Virtual, A> {
+    Into::<Option<Address<Virtual, A>>>::into(p).unwrap()
+}

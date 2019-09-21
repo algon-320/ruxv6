@@ -15,7 +15,7 @@ extern crate spin;
 
 #[macro_use]
 mod utils;
-use utils::address::{paddr, vaddr};
+use utils::address::{p2v, paddr, v2p, vaddr};
 
 #[macro_use]
 mod vga_buffer;
@@ -57,11 +57,9 @@ pub unsafe extern "C" fn main() {
     println!("main function called !");
     println!("kernel_end = {}", &kernel_end as *const usize as usize);
 
-    let end_phys = paddr::from_raw(4 * 1024 * 1024).unwrap();
-    let end_virt: Option<vaddr> = end_phys.into();
     kalloc::kinit1(
         vaddr::from_raw(&kernel_end as *const usize as usize).unwrap(),
-        end_virt.unwrap(),
+        p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
     ); // phys page allocator
 
     unimplemented!();

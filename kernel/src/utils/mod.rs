@@ -1,4 +1,5 @@
 #[macro_use]
-mod macros;
+mod common;
+pub use common::*;
 
 pub mod address;

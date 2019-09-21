@@ -13,3 +13,11 @@ macro_rules! asigned_array {
         tmp
     }};
 }
+
+// -------------------------
+
+pub fn fill(dst: &mut [u8], value: u8) {
+    for x in dst.into_iter() {
+        *x = value;
+    }
+}

@@ -1,5 +1,6 @@
 use crate::spin::Mutex;
-use crate::utils::address::{paddr, paddr_pg, vaddr, vaddr_pg};
+use crate::utils;
+use crate::utils::address::{p2v, paddr, paddr_pg, v2p, vaddr, vaddr_pg};
 
 #[repr(C)]
 struct Run {
@@ -12,7 +13,6 @@ lazy_static! {
 
 const PGSIZE: usize = 4096;
 const PHYSTOP: usize = 0xE000000;
-
 type Page = [u8; PGSIZE];
 
 fn page_roundup(addr: vaddr) -> vaddr_pg {
@@ -80,19 +80,14 @@ lazy_static! {
 }
 
 pub fn kfree(v: vaddr_pg) {
-    let p = Into::<Option<paddr_pg>>::into(v).unwrap();
-    if v.as_raw() < *kernel_end_addr || p.as_raw() >= PHYSTOP {
+    if v.as_raw() < *kernel_end_addr || v2p(v).as_raw() >= PHYSTOP {
         panic!("kfree");
     }
 
-    let mut p = v;
-    for _ in 0..PGSIZE {
-        let tmp = p.as_mut_ptr::<u8>();
-        unsafe {
-            *tmp = 1u8;
-        }
-        p.increase(1);
-    }
+    utils::fill(
+        unsafe { core::slice::from_raw_parts_mut(v.as_mut_ptr(), PGSIZE) },
+        1u8,
+    );
 
     let r = v.as_mut_ptr::<Run>();
     unsafe {
