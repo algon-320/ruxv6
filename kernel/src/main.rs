@@ -67,8 +67,6 @@ pub extern "C" fn main() {
         p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
     ); // phys page allocator
 
-    println!("panic = 0x{:X}", panic as usize);
-
     vm::kvmalloc();
 
     mp::mpinit();
