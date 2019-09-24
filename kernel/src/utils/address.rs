@@ -1,27 +1,38 @@
+use crate::mmu;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Virtual;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Physical;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct UnAligned;
+pub struct FreeAligned;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PageAligned;
 
 pub trait Align {
     fn check(addr: &usize) -> bool;
+    fn bytes() -> usize;
 }
 
-impl Align for UnAligned {
+impl Align for FreeAligned {
     #[inline]
-    fn check(addr: &usize) -> bool {
+    fn check(_: &usize) -> bool {
         true
+    }
+    #[inline]
+    fn bytes() -> usize {
+        1
     }
 }
 impl Align for PageAligned {
     #[inline]
     fn check(addr: &usize) -> bool {
-        addr % 4096 == 0
+        addr % mmu::PGSIZE == 0
+    }
+    #[inline]
+    fn bytes() -> usize {
+        mmu::PGSIZE
     }
 }
 
@@ -40,9 +51,13 @@ impl<T, A: Align> Address<T, A> {
             phantom: PhantomData,
         }
     }
-    pub fn is_null(&self) -> bool {
-        self.addr == 0
+    pub fn null() -> Self {
+        Self::from_raw(0).unwrap()
     }
+    pub fn is_null(&self) -> bool {
+        self.addr == Self::null().addr
+    }
+
     pub fn from_raw(addr: usize) -> Option<Self> {
         Some(Address {
             addr: Some(addr).filter(A::check)?,
@@ -51,18 +66,35 @@ impl<T, A: Align> Address<T, A> {
     }
 
     // modifications
-    pub fn shift(&mut self, offset: isize) {
-        if offset < 0 {
-            self.decrease((-offset) as usize);
+    // pub fn shift(&mut self, offset: isize) {
+    //     if offset < 0 {
+    //         self.decrease((-offset) as usize);
+    //     } else {
+    //         self.increase(offset as usize);
+    //     }
+    // }
+    pub fn increase(&mut self, units: usize) {
+        self.addr += units * A::bytes();
+    }
+    pub fn decrease(&mut self, units: usize) {
+        self.addr -= units * A::bytes();
+    }
+
+    pub fn increase_bytes(&mut self, bytes: usize) -> Option<()> {
+        if (self.addr + bytes) % A::bytes() == 0 {
+            self.addr += bytes;
+            Some(())
         } else {
-            self.increase(offset as usize);
+            None
         }
     }
-    pub fn increase(&mut self, bytes: usize) {
-        self.addr += bytes;
-    }
-    pub fn decrease(&mut self, bytes: usize) {
-        self.addr -= bytes;
+    pub fn decrease_bytes(&mut self, bytes: usize) -> Option<()> {
+        if (self.addr - bytes) % A::bytes() == 0 {
+            self.addr -= bytes;
+            Some(())
+        } else {
+            None
+        }
     }
 
     // convert other alignment type
@@ -80,6 +112,14 @@ impl<T, A: Align> Address<T, A> {
     }
 }
 
+use core::fmt;
+impl<T, A: Align> fmt::Display for Address<T, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{:X}", self.as_raw())
+    }
+}
+
+// TODO to move elsewhere
 const KERNBASE: usize = 0x80000000;
 
 // convert between Virtual and Physical
@@ -94,8 +134,8 @@ impl<A: Align> Into<Option<Address<Physical, A>>> for Address<Virtual, A> {
     }
 }
 
-pub type vaddr = Address<Virtual, UnAligned>;
-pub type paddr = Address<Physical, UnAligned>;
+pub type vaddr = Address<Virtual, FreeAligned>;
+pub type paddr = Address<Physical, FreeAligned>;
 
 pub type vaddr_pg = Address<Virtual, PageAligned>;
 pub type paddr_pg = Address<Physical, PageAligned>;
@@ -107,4 +147,12 @@ pub fn v2p<A: Align>(v: Address<Virtual, A>) -> Address<Physical, A> {
 #[inline]
 pub fn p2v<A: Align>(p: Address<Physical, A>) -> Address<Virtual, A> {
     Into::<Option<Address<Virtual, A>>>::into(p).unwrap()
+}
+#[inline]
+pub fn v2p_raw(v: usize) -> usize {
+    v2p(vaddr::from_raw(v).unwrap()).as_raw()
+}
+#[inline]
+pub fn p2v_raw(p: usize) -> usize {
+    p2v(paddr::from_raw(p).unwrap()).as_raw()
 }

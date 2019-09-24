@@ -6,7 +6,7 @@ macro_rules! trunc8 {
 }
 
 // similar to C99's designated initializer
-macro_rules! asigned_array {
+macro_rules! assigned_array {
     ($def:expr; $len:expr; $([$idx:expr] = $val:expr),*) => {{
         let mut tmp = [$def; $len];
         $(tmp[$idx] = $val;)*
@@ -14,7 +14,7 @@ macro_rules! asigned_array {
     }};
 }
 
-// -------------------------
+//------------------------------------------------------------------------------
 
 pub fn fill(dst: &mut [u8], value: u8) {
     for x in dst.into_iter() {

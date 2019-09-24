@@ -22,13 +22,13 @@ bitflags! {
 
 #[inline]
 pub fn readflags() -> EFlags {
-    let mut eflags: u32 = 0;
+    let mut tmp: u32 = 0;
     unsafe {
         asm!("pushfl; popl %0"
-                : "=r"(eflags)
+                : "=r"(tmp)
                 ::: "volatile");
     }
-    EFlags::from_bits(eflags).unwrap()
+    EFlags::from_bits(tmp).unwrap()
 }
 
 #[inline]
@@ -137,5 +137,42 @@ pub fn stosl(addr: *const u8, data: u32, cnt: usize) {
 pub fn nop() {
     unsafe {
         asm!("nop" :::: "volatile");
+    }
+}
+
+#[inline]
+pub fn xchg(addr: &mut usize, new_val: usize) -> usize {
+    let mut result;
+    unsafe {
+        asm!("lock; xchgl $0, $1"
+                : "+m" (addr as *mut usize), "={eax}" (result)
+                : "1" (new_val)
+                : "cc"
+                : "volatile");
+    }
+    result
+}
+
+#[inline]
+pub fn rcr2() -> usize {
+    let mut val;
+    unsafe {
+        asm!("movl %cr2, $0"
+                : "=r" (val)
+                :
+                :
+                : "volatile");
+    }
+    val
+}
+
+#[inline]
+pub fn lcr3(val: usize) {
+    unsafe {
+        asm!("movl $0, %cr3"
+                :
+                : "r" (val)
+                :
+                : "volatile");
     }
 }

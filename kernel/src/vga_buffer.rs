@@ -160,7 +160,7 @@ lazy_static! {
         column_position: 0,
         row_position: 0,
         color: ColorCode::new(Color::LightGreen, Color::Black),
-        buffer: unsafe { &mut *(0xB8000 as *mut Buffer) },
+        buffer: unsafe { &mut *(0x800B8000 as *mut Buffer) },
     });
 }
 
@@ -177,6 +177,5 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
     VGA_WRITER.lock().write_fmt(args).unwrap();
 }

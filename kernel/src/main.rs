@@ -5,6 +5,8 @@
 #![feature(asm)]
 #![feature(start)]
 
+//------------------------------------------------------------------------------
+
 #[macro_use]
 extern crate bitflags;
 
@@ -13,56 +15,63 @@ extern crate lazy_static;
 
 extern crate spin;
 
+//------------------------------------------------------------------------------
+
 #[macro_use]
 mod utils;
-use utils::address::{p2v, paddr, v2p, vaddr};
-
 #[macro_use]
 mod vga_buffer;
 
 // mod console;
 mod kalloc;
+mod mmu;
 mod vm;
 // mod proc;
 // mod spinlock;
+mod mp;
 mod x86;
 
-//--------------------------------------------------------
+use utils::address::{p2v, paddr, v2p, vaddr};
+
+//------------------------------------------------------------------------------
 
 global_asm!(include_str!("entry.S"));
 
-type pde_t = u32;
+type PageDirEntry = u32;
 
-const NPDENTRIES: usize = 1024;
-const PGSIZE: usize = 4096;
+extern "C" {
+    #[no_mangle]
+    static kernel_end: [u8; 0];
+}
 
 #[used]
 #[no_mangle]
 #[link_section = ".data.entrypgdir"]
-pub static entrypgdir: [pde_t; NPDENTRIES] = asigned_array![0; NPDENTRIES;
+pub static entrypgdir: [PageDirEntry; mmu::NPDENTRIES] = assigned_array![
+    0; mmu::NPDENTRIES;
     // Map VA's [0, 4MB) to PA's [0, 4MB)
     [0] = 0x000 | 0x001 | 0x002 | 0x080,
     // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
     [0x80000000 >> 22] = 0x000 | 0x001 | 0x002 | 0x080
+    // 0x80 means the size of the page is 4MiB
 ];
 
-extern "C" {
-    #[no_mangle]
-    static kernel_end: usize;
-}
-
 #[no_mangle]
-pub unsafe extern "C" fn main() {
+pub extern "C" fn main() {
     vga_buffer::VGA_WRITER.lock().clear_screen();
     println!("main function called !");
-    println!("kernel_end = {}", &kernel_end as *const usize as usize);
+    println!("kernel_end = {:p}", unsafe { kernel_end.as_ptr() });
 
     kalloc::kinit1(
-        vaddr::from_raw(&kernel_end as *const usize as usize).unwrap(),
+        vaddr::from_raw(unsafe { kernel_end.as_ptr() } as usize).unwrap(),
         p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
     ); // phys page allocator
 
-    unimplemented!();
+    println!("panic = 0x{:X}", panic as usize);
+
+    vm::kvmalloc();
+
+    mp::mpinit();
 
     loop {}
 }

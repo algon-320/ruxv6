@@ -3,6 +3,8 @@ sysroot/
 **/target
 **/*.rs.bk
 kernel/kernel
+kernel/kernel-debug
 bootloader/mbr
 xv6.img
+xv6-debug.img
 fs.img
