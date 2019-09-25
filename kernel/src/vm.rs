@@ -93,7 +93,6 @@ fn mappages(
         tmp.increase(size - 1);
         mmu::page_rounddown(tmp)
     };
-    let mut cnt = 0;
     loop {
         let pte = walkpgdir(pgdir, a, true);
         if pte.is_null() {
@@ -110,9 +109,7 @@ fn mappages(
         }
         a.increase(1);
         pa.increase(1);
-        cnt += 1;
     }
-    println!("mappages: cnt = {}", cnt);
     Some(())
 }
 
