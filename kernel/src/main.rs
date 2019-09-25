@@ -59,7 +59,7 @@ pub static entrypgdir: [PageDirEntry; mmu::NPDENTRIES] = assigned_array![
 #[no_mangle]
 pub extern "C" fn main() {
     vga_buffer::VGA_WRITER.lock().clear_screen();
-    println!("main function called !");
+    println!(vga_buffer::INFO_COLOR; "main function called !");
     println!("kernel_end = {:p}", unsafe { kernel_end.as_ptr() });
 
     kalloc::kinit1(
@@ -67,9 +67,9 @@ pub extern "C" fn main() {
         p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
     ); // phys page allocator
 
-    vm::kvmalloc();
+    vm::kvmalloc(); // kernel page table
 
-    mp::mpinit();
+    mp::mpinit(); // detect other processors
 
     loop {}
 }
@@ -79,7 +79,7 @@ use core::panic::PanicInfo;
 #[panic_handler]
 #[no_mangle]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
+    println!(vga_buffer::ERROR_COLOR; "{}", info);
     loop {}
 }
 

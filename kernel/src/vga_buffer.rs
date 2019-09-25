@@ -26,10 +26,10 @@ pub enum Color {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 impl ColorCode {
-    const fn new(fg: Color, bg: Color) -> Self {
+    pub const fn new(fg: Color, bg: Color) -> Self {
         ColorCode((bg as u8) << 4 | (fg as u8))
     }
 }
@@ -143,6 +143,10 @@ impl Writer {
         x86::outb(0x3D4, trunc8!(0x0E));
         x86::outb(0x3D5, trunc8!((pos >> 8) & 0xFF));
     }
+
+    fn change_color(&mut self, color: ColorCode) {
+        self.color = color;
+    }
 }
 
 impl fmt::Write for Writer {
@@ -155,27 +159,42 @@ impl fmt::Write for Writer {
 use core::fmt::Write;
 use spin::Mutex;
 
+pub const DEFAULT_COLOR: ColorCode = ColorCode::new(Color::White, Color::Black);
+pub const ERROR_COLOR: ColorCode = ColorCode::new(Color::LightRed, Color::Black);
+pub const WARNING_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
+pub const INFO_COLOR: ColorCode = ColorCode::new(Color::LightGreen, Color::Black);
+
 lazy_static! {
     pub static ref VGA_WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
         row_position: 0,
-        color: ColorCode::new(Color::LightGreen, Color::Black),
+        color: DEFAULT_COLOR,
         buffer: unsafe { &mut *(0x800B8000 as *mut Buffer) },
     });
 }
 
 #[macro_export]
 macro_rules! print {
+    ($color:expr;$($arg:tt)*) => ($crate::vga_buffer::_print_with_color($color, format_args!($($arg)*)));
     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
+    ($color:expr;$($arg:tt)*) => ($crate::print!($color;"{}\n", format_args!($($arg)*)));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    VGA_WRITER.lock().write_fmt(args).unwrap();
+    let mut writer = VGA_WRITER.lock();
+    writer.write_fmt(args).unwrap();
+}
+#[doc(hidden)]
+pub fn _print_with_color(color: ColorCode, args: fmt::Arguments) {
+    let mut writer = VGA_WRITER.lock();
+    writer.change_color(color);
+    writer.write_fmt(args).unwrap();
+    writer.change_color(DEFAULT_COLOR);
 }
