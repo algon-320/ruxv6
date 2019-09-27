@@ -1,6 +1,6 @@
 use super::utils;
 use super::utils::address::{paddr, paddr_pg, vaddr, vaddr_pg};
-use super::utils::pointer::Pointer;
+use super::utils::pointer::Ptr;
 use core::slice;
 
 //------------------------------------------------------------------------------
@@ -11,6 +11,8 @@ pub const PGSIZE: usize = 4096; // bytes mapped by a page
 
 const PTXSHIFT: usize = 12; // offset of PTX in a linear address
 const PDXSHIFT: usize = 22; // offset of PDX in a linear address
+
+pub type Page = [u8; PGSIZE];
 
 #[inline]
 pub fn page_roundup(addr: vaddr) -> vaddr_pg {

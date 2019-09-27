@@ -25,8 +25,8 @@ mod vga_buffer;
 // mod console;
 mod kalloc;
 mod mmu;
+mod proc;
 mod vm;
-// mod proc;
 // mod spinlock;
 mod mp;
 mod x86;
@@ -66,10 +66,10 @@ pub extern "C" fn main() {
         vaddr::from_raw(unsafe { kernel_end.as_ptr() } as usize).unwrap(),
         p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
     ); // phys page allocator
-
     vm::kvmalloc(); // kernel page table
-
     mp::mpinit(); // detect other processors
+
+    unimplemented!();
 
     loop {}
 }

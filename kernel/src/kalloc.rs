@@ -1,10 +1,10 @@
-use super::mmu;
 use super::spin::Mutex;
 
+use super::mmu;
+use super::mmu::Page;
 use super::utils;
 use super::utils::address::{p2v, paddr, paddr_pg, v2p, vaddr, vaddr_pg};
-use super::utils::pointer::Pointer;
-
+use super::utils::pointer::Ptr;
 //------------------------------------------------------------------------------
 
 extern "C" {
@@ -14,15 +14,14 @@ extern "C" {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Run {
-    next: Pointer<Run>,
+    next: Ptr<Run>,
 }
 
 lazy_static! {
-    static ref freelist: Mutex<Pointer<Run>> = Mutex::new(Pointer::null());
+    static ref freelist: Mutex<Ptr<Run>> = Mutex::new(Ptr::null());
 }
 
 const PHYSTOP: usize = 0xE000000;
-pub type Page = [u8; mmu::PGSIZE];
 
 //------------------------------------------------------------------------------
 
@@ -34,10 +33,11 @@ pub type Page = [u8; mmu::PGSIZE];
 pub fn kinit1(start: vaddr, end: vaddr) {
     freerange(mmu::page_roundup(start), end.check_aligned().unwrap());
 
-    // check after condition
+    // check some conditions
     unsafe {
-        assert!(core::mem::size_of::<Page>() == mmu::PGSIZE);
-        assert_eq!(core::mem::size_of::<vaddr>(), core::mem::size_of::<usize>());
+        use core::mem::size_of;
+        assert!(size_of::<Page>() == mmu::PGSIZE);
+        assert_eq!(size_of::<vaddr>(), size_of::<usize>());
 
         let mut ptr = mmu::page_roundup(start);
 
@@ -66,57 +66,48 @@ pub fn kinit1(start: vaddr, end: vaddr) {
 
 fn freerange(start: vaddr_pg, end: vaddr_pg) {
     println!("freerange: start={}, end={}", start, end);
-    let mut p = Pointer::<Page>::from(start);
-    let mut cnt = 0;
-    while p.address().as_raw() + mmu::PGSIZE <= end.as_raw() {
-        kfree(p);
+    let mut p = Ptr::<Page>::from(start);
+    let mut num_pages = 0;
+    while p.address().next(mmu::PGSIZE) <= end {
+        kfree(&mut *p);
         p.increase(1);
-        cnt += 1;
+        num_pages += 1;
     }
-    println!("{} pages available", cnt);
+    println!("{} pages available", num_pages);
 }
 
-pub fn kfree(page: Pointer<Page>) {
-    // TODO: give pointer alignment
-    if page
-        .address()
-        .check_aligned::<utils::address::PageAligned>()
-        .is_none()
-    {
-        panic!("kfree: FreeAligned");
-    }
-
-    if page.address().as_raw() < unsafe { kernel_end.as_ptr() } as usize
-        || v2p(page.address()).as_raw() >= PHYSTOP
+pub fn kfree<'a>(page: &'a mut Page) {
+    if page.as_ptr() < unsafe { kernel_end.as_ptr() }
+        || v2p(vaddr::from_ptr(page.as_ptr()).unwrap()) >= PHYSTOP
     {
         panic!("kfree");
     }
+
+    let page: Ptr<Page> = Ptr::from(page.as_ptr() as *const Page);
 
     // Fill with junk to catch dangling refs.
     unsafe {
         mmu::fill_page(page.address().check_aligned().unwrap(), 1u8);
     }
 
-    let r = page.cast::<Run>();
-    unsafe {
+    let mut r = page.cast::<Run>();
+    {
         let mut tmp = freelist.lock();
-        (*r.get_mut()).next = *tmp;
+        (*r).next = *tmp;
         *tmp = r;
     }
 }
 
 // return Some(address) if there is an available page, otherwise None
-pub fn kalloc() -> Option<Pointer<Page>> {
-    let r: *const Run;
+pub fn kalloc<'a>() -> Option<&'a mut Page> {
+    let r: Ptr<Run>;
     {
         let mut tmp = freelist.lock();
         if tmp.is_null() {
             return None;
         }
-        r = (*tmp).get();
-        unsafe {
-            *tmp = (*r).next;
-        }
+        r = *tmp;
+        *tmp = (*r).next;
     }
-    Some(Pointer::from(vaddr_pg::from_raw(r as usize).unwrap()))
+    unsafe { r.cast::<Page>().get_mut().as_mut() }
 }

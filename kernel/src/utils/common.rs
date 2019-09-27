@@ -16,8 +16,15 @@ macro_rules! assigned_array {
 
 //------------------------------------------------------------------------------
 
-pub fn fill(dst: &mut [u8], value: u8) {
+pub fn fill<T: Copy>(dst: &mut [T], value: T) {
     for x in dst.into_iter() {
         *x = value;
     }
+}
+
+pub fn bytes_from_ref<'a, T>(r: &'a T) -> &'a [u8] {
+    unsafe { core::slice::from_raw_parts(r as *const T as *const u8, core::mem::size_of::<T>()) }
+}
+pub fn mut_bytes_from_ref<'a, T>(r: &'a mut T) -> &'a mut [u8] {
+    unsafe { core::slice::from_raw_parts_mut(r as *mut T as *mut u8, core::mem::size_of::<T>()) }
 }

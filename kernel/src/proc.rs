@@ -1,11 +1,13 @@
 use super::x86::{self, EFlags};
 
-#[derive(Default, Debug)]
-pub struct CPU {}
+#[derive(Default, Debug, Copy, Clone)]
+pub struct CPU {
+    pub apicid: u8,
+}
 
 impl CPU {
-    pub fn new() -> Self {
-        CPU {}
+    pub const fn new() -> Self {
+        CPU { apicid: 0 }
     }
 }
 
