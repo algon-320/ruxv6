@@ -31,11 +31,11 @@ lazy_static! {
 // Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
-fn walkpgdir<'a>(
-    pgdir: &'a mut [PageDirEntry; mmu::NPDENTRIES],
+fn walkpgdir(
+    pgdir: &mut [PageDirEntry; mmu::NPDENTRIES],
     va: vaddr_pg,
     alloc: bool,
-) -> Option<&'a mut PageTableEntry> {
+) -> Option<&mut PageTableEntry> {
     let pde = &mut pgdir[mmu::pdx(va)];
     let pgtab: &mut [PageTableEntry; mmu::NPTENTRIES];
     if *pde & mmu::PteFlags::PRESENT.bits() != 0 {
@@ -71,10 +71,10 @@ fn walkpgdir<'a>(
     Some(&mut pgtab[mmu::ptx(va)])
 }
 
-fn walkpgdir_view<'a>(
-    pgdir: &'a [PageDirEntry; mmu::NPDENTRIES],
+fn walkpgdir_lookup(
+    pgdir: &[PageDirEntry; mmu::NPDENTRIES],
     va: vaddr_pg,
-) -> Option<&'a PageTableEntry> {
+) -> Option<&PageTableEntry> {
     let pde = pgdir[mmu::pdx(va)];
     if pde & mmu::PteFlags::PRESENT.bits() != 0 {
         let pgtab = unsafe {
@@ -90,8 +90,8 @@ fn walkpgdir_view<'a>(
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.
-fn mappages<'a>(
-    pgdir: &'a mut [PageDirEntry; mmu::NPDENTRIES],
+fn mappages(
+    pgdir: &mut [PageDirEntry; mmu::NPDENTRIES],
     va: vaddr,
     size: usize,
     mut pa: paddr_pg,
@@ -191,11 +191,11 @@ fn setupkvm() -> Option<&'static [PageDirEntry; mmu::NPDENTRIES]> {
 pub fn kvmalloc() {
     lazy_static::initialize(&kpgdir);
 
-    // assertions
+    // check mappings
     unsafe {
         {
             let va = vaddr_pg::from_raw(KERNBASE).unwrap();
-            let tmp = walkpgdir_view(kpgdir.unwrap(), va);
+            let tmp = walkpgdir_lookup(kpgdir.unwrap(), va);
             assert!(!tmp.is_none());
             let tmp = tmp.unwrap();
             assert_eq!(mmu::pte_addr(*tmp), paddr_pg::from_raw(0).unwrap());
@@ -203,7 +203,7 @@ pub fn kvmalloc() {
 
         {
             let va = vaddr_pg::from_raw(KERNLINK).unwrap();
-            let tmp = walkpgdir_view(kpgdir.unwrap(), va);
+            let tmp = walkpgdir_lookup(kpgdir.unwrap(), va);
             assert!(!tmp.is_none());
             let tmp = tmp.unwrap();
             assert_eq!(
@@ -213,19 +213,19 @@ pub fn kvmalloc() {
         }
 
         {
-            let va = vaddr_pg::from_raw(unsafe { data.as_ptr() } as usize).unwrap();
-            let tmp = walkpgdir_view(kpgdir.unwrap(), va);
+            let va = vaddr_pg::from_raw(data.as_ptr() as usize).unwrap();
+            let tmp = walkpgdir_lookup(kpgdir.unwrap(), va);
             assert!(!tmp.is_none());
             let tmp = tmp.unwrap();
             assert_eq!(
                 mmu::pte_addr(*tmp),
-                v2p(vaddr_pg::from_raw(unsafe { data.as_ptr() } as usize).unwrap())
+                v2p(vaddr_pg::from_raw(data.as_ptr() as usize).unwrap())
             );
         }
 
         {
             let va = vaddr_pg::from_raw(DEVSPACE).unwrap();
-            let tmp = walkpgdir_view(kpgdir.unwrap(), va);
+            let tmp = walkpgdir_lookup(kpgdir.unwrap(), va);
             assert!(!tmp.is_none());
             let tmp = tmp.unwrap();
             assert_eq!(mmu::pte_addr(*tmp), paddr_pg::from_raw(DEVSPACE).unwrap());
@@ -233,7 +233,7 @@ pub fn kvmalloc() {
 
         {
             let va = vaddr_pg::from_raw(0x80101000).unwrap();
-            let tmp = walkpgdir_view(kpgdir.unwrap(), va);
+            let tmp = walkpgdir_lookup(kpgdir.unwrap(), va);
             assert!(!tmp.is_none());
             let tmp = tmp.unwrap();
             assert_eq!(mmu::pte_addr(*tmp), paddr_pg::from_raw(0x101000).unwrap());

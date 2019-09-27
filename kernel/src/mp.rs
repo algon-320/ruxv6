@@ -208,4 +208,5 @@ pub fn mpinit() {
 
     println!(super::vga_buffer::INFO_COLOR; "ncpu = {}", unsafe {ncpu});
     println!(super::vga_buffer::INFO_COLOR; "cpus = {:?}", unsafe {&cpus[..ncpu]});
+    println!(super::vga_buffer::INFO_COLOR; "lapic = {:?}", unsafe{lapic});
 }
