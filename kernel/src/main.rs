@@ -22,15 +22,16 @@ mod utils;
 #[macro_use]
 mod vga_buffer;
 
-// mod console;
+mod console;
+mod file;
+mod fs;
 mod kalloc;
-mod mmu;
-mod proc;
-mod vm;
-// mod spinlock;
 mod lapic;
+mod mmu;
 mod mp;
+mod proc;
 mod traps;
+mod vm;
 mod x86;
 
 use utils::address::{p2v, paddr, v2p, vaddr};
@@ -77,6 +78,9 @@ pub extern "C" fn main() {
 
     // interrupt controller
     lapic::lapicinit();
+
+    // console hardware
+    console::consoleinit();
 
     unimplemented!();
 
