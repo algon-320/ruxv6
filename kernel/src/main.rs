@@ -28,7 +28,9 @@ mod mmu;
 mod proc;
 mod vm;
 // mod spinlock;
+mod lapic;
 mod mp;
+mod traps;
 mod x86;
 
 use utils::address::{p2v, paddr, v2p, vaddr};
@@ -62,12 +64,19 @@ pub extern "C" fn main() {
     println!(vga_buffer::INFO_COLOR; "main function called !");
     println!("kernel_end = {:p}", unsafe { kernel_end.as_ptr() });
 
+    // phys page allocator
     kalloc::kinit1(
         vaddr::from_raw(unsafe { kernel_end.as_ptr() } as usize).unwrap(),
         p2v(paddr::from_raw(4 * 1024 * 1024).unwrap()),
-    ); // phys page allocator
-    vm::kvmalloc(); // kernel page table
-    mp::mpinit(); // detect other processors
+    );
+    // kernel page table
+    vm::kvmalloc();
+
+    // detect other processors
+    mp::mpinit();
+
+    // interrupt controller
+    lapic::lapicinit();
 
     unimplemented!();
 

@@ -1,3 +1,4 @@
+use super::lapic;
 use super::proc::CPU;
 use super::utils;
 use super::utils::address::{p2v, paddr, paddr_raw, v2p, vaddr, vaddr_raw};
@@ -28,7 +29,7 @@ struct mpconf {
     oem_table: *const u32, // OEM table pointer
     oem_length: u16,       // OEM table length
     entry: u16,            // entry count
-    lapicaddr: *const u32, // address of local APIC
+    lapicaddr: *mut u32,   // address of local APIC
     xlenght: u16,          // extended table length
     xchecksum: u8,         // extended table checksum
     reserved: u8,
@@ -132,10 +133,9 @@ fn mpconfig() -> Result<(&'static mp, &'static mpconf), &'static str> {
 }
 
 // be careful to use !
-static mut lapic: *const u32 = core::ptr::null();
-static mut ncpu: usize = 0;
-static mut cpus: [CPU; MAX_NCPU] = [CPU::new(); MAX_NCPU];
-static mut ioapicid: u8 = 0;
+pub static mut ncpu: usize = 0;
+pub static mut cpus: [CPU; MAX_NCPU] = [CPU::new(); MAX_NCPU];
+pub static mut ioapicid: u8 = 0;
 
 // Table entry types
 const MPPROC: u8 = 0x00; // One per processor
@@ -157,7 +157,7 @@ pub fn mpinit() {
 
     unsafe {
         // it's safe because now only 'this' processor is moving.
-        lapic = conf.lapicaddr;
+        lapic::lapic = conf.lapicaddr;
 
         let mut p: Ptr<u8> = {
             let conf_addr = vaddr::from_raw(conf as *const mpconf as usize).unwrap();
@@ -206,7 +206,7 @@ pub fn mpinit() {
         x86::outb(0x23, x86::inb(0x23) | 1); // Mask external interrupts.
     }
 
-    println!(super::vga_buffer::INFO_COLOR; "ncpu = {}", unsafe {ncpu});
-    println!(super::vga_buffer::INFO_COLOR; "cpus = {:?}", unsafe {&cpus[..ncpu]});
-    println!(super::vga_buffer::INFO_COLOR; "lapic = {:?}", unsafe{lapic});
+    println!("ncpu = {}", unsafe { ncpu });
+    println!("cpus = {:?}", unsafe { &cpus[..ncpu] });
+    println!("lapic = {:?}", unsafe { lapic::lapic });
 }
