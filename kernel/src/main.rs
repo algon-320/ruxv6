@@ -74,13 +74,13 @@ pub extern "C" fn main() {
     vm::kvmalloc();
 
     // detect other processors
-    mp::mpinit();
+    mp::mp_init();
 
     // interrupt controller
-    lapic::lapicinit();
+    lapic::lapic_init();
 
     // console hardware
-    console::consoleinit();
+    console::console_init();
 
     unimplemented!();
 

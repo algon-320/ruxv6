@@ -18,7 +18,7 @@ fn console_write(inode: *const file::Inode, bytes: *const [u8]) {
     unimplemented!()
 }
 
-pub fn consoleinit() {
+pub fn console_init() {
     let mut tmp = devsw.lock();
     tmp[file::CONSOLE].write = Some(console_write);
     tmp[file::CONSOLE].read = Some(console_read);

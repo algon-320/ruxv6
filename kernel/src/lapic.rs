@@ -44,7 +44,7 @@ fn lapic_read(index: usize) -> u32 {
     unsafe { core::ptr::read_volatile(lapic.offset(index as isize)) }
 }
 
-pub fn lapicinit() {
+pub fn lapic_init() {
     if unsafe { lapic.is_null() } {
         return;
     }

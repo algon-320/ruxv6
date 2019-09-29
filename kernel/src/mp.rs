@@ -146,7 +146,7 @@ const MPLINTR: u8 = 0x04; // One per system interrupt source
 
 const MAX_NCPU: usize = 8;
 
-pub fn mpinit() {
+pub fn mp_init() {
     {
         use core::mem::size_of;
         assert_eq!(size_of::<mp>(), 16);
