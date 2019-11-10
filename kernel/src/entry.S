@@ -3,7 +3,7 @@
 .set CR0_PG,        0x80000000  # Paging
 .set CR4_PSE,       0x00000010  # Page size extension
 
-.set KSTACKSIZE,    4096        # Size of per-process kernel stack
+.set KSTACKSIZE,    4096 * 2    # Size of per-process kernel stack
 
 .p2align 2
 .text
