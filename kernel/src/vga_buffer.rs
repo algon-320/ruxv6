@@ -162,7 +162,8 @@ use spin::Mutex;
 pub const DEFAULT_COLOR: ColorCode = ColorCode::new(Color::White, Color::Black);
 pub const ERROR_COLOR: ColorCode = ColorCode::new(Color::LightRed, Color::Black);
 pub const WARNING_COLOR: ColorCode = ColorCode::new(Color::Yellow, Color::Black);
-pub const INFO_COLOR: ColorCode = ColorCode::new(Color::LightGreen, Color::Black);
+pub const INFO_COLOR: ColorCode = ColorCode::new(Color::LightCyan, Color::Black);
+pub const DEBUG_COLOR: ColorCode = ColorCode::new(Color::LightGreen, Color::Black);
 
 lazy_static! {
     pub static ref VGA_WRITER: Mutex<Writer> = Mutex::new(Writer {
@@ -175,15 +176,21 @@ lazy_static! {
 
 #[macro_export]
 macro_rules! print {
-    ($color:expr;$($arg:tt)*) => ($crate::vga_buffer::_print_with_color($color, format_args!($($arg)*)));
-    ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
+    ($color:expr;$($arg:tt)*) => (crate::vga_buffer::_print_with_color($color, format_args!($($arg)*)));
+    ($($arg:tt)*) => (crate::vga_buffer::_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
 macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($color:expr;$($arg:tt)*) => ($crate::print!($color;"{}\n", format_args!($($arg)*)));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+    () => (crate::print!("\n"));
+    ($color:expr;$($arg:tt)*) => (crate::print!($color;"{}\n", format_args!($($arg)*)));
+    ($($arg:tt)*) => (crate::print!("{}\n", format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! debug_println {
+    () => (crate::print!("\n"));
+    ($($arg:tt)*) => (crate::print!(crate::vga_buffer::DEBUG_COLOR;"{}\n", format_args!($($arg)*)));
 }
 
 #[doc(hidden)]
