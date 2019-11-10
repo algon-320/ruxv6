@@ -91,6 +91,9 @@ pub extern "C" fn main() {
     // disable pic
     picirq::pic_init();
 
+    // another interrupt controller
+    ioapic::ioapic_init();
+
     // console hardware
     // console::console_init();
 

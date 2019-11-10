@@ -1,3 +1,4 @@
+use super::mp;
 use super::traps;
 use super::utils::address::{paddr, paddr_raw, vaddr};
 
@@ -49,6 +50,24 @@ fn ioapic_write(reg: u32, data: u32) {
     unsafe {
         let ioapic_data: *mut u32 = &mut (*ioapic).data;
         core::ptr::write_volatile(ioapic_data, data);
+    }
+}
+
+pub fn ioapic_init() {
+    unsafe {
+        ioapic = IOAPIC.as_mut_ptr();
+    }
+    let maxintr = (ioapic_read(REG_VER) >> 16) & 0xFF;
+    let id = (ioapic_read(REG_ID) >> 24) as u8;
+    if id != unsafe { mp::ioapicid } {
+        println!(crate::vga_buffer::WARNING_COLOR; "ioapic_init: id isn't equal to ioapicid; not a MP");
+    }
+
+    // Mark all interrupts edge-triggered, active high, disabled,
+    // and not routed to any CPUs.
+    for i in 0..=maxintr {
+        ioapic_write(REG_TABLE + 2 * i + 0, INT_DISABLED | (traps::T_IRQ0 + i));
+        ioapic_write(REG_TABLE + 2 * i + 1, 0);
     }
 }
 
