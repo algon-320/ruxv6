@@ -1,4 +1,5 @@
 use super::lapic;
+use super::param;
 use super::proc::CPU;
 use super::utils;
 use super::utils::address::{p2v, paddr, paddr_raw, v2p, vaddr, vaddr_raw};
@@ -58,6 +59,51 @@ struct mpioapic {
     addr: *const u32, // I/O APIC address
 }
 
+use core::cell::Cell;
+
+// be careful to use !
+pub static mut CPU_ARRAY: CPUArray = CPUArray::new();
+// pub static mut ncpu: usize = 0;
+// pub static mut cpus: [Option<CPU>; param::NCPU] = [None, None, None, None, None, None, None, None];
+
+pub static mut ioapicid: u8 = 0;
+
+pub struct CPUArray {
+    ncpu: usize,
+    cpus: [Option<CPU>; param::NCPU],
+}
+impl CPUArray {
+    pub const fn new() -> Self {
+        CPUArray {
+            ncpu: 0,
+            cpus: [None, None, None, None, None, None, None, None],
+        }
+    }
+    pub fn slice(&self) -> &[Option<CPU>] {
+        &self.cpus
+    }
+    pub fn len(&self) -> usize {
+        self.ncpu
+    }
+    pub fn add(&mut self, id: usize, apicid: u8) {
+        self.cpus[self.ncpu] = Some(CPU::new(id, apicid));
+        self.ncpu += 1;
+    }
+    pub fn borrow(&self, idx: usize) -> &CPU {
+        self.cpus[idx].as_ref().unwrap()
+    }
+    pub fn borrow_mut(&mut self, idx: usize) -> &mut CPU {
+        self.cpus[idx].as_mut().unwrap()
+    }
+}
+
+// Table entry types
+const MPPROC: u8 = 0x00; // One per processor
+const MPBUS: u8 = 0x01; // One per bus
+const MPIOAPIC: u8 = 0x02; // One per I/O APIC
+const MPIOINTR: u8 = 0x03; // One per bus interrupt source
+const MPLINTR: u8 = 0x04; // One per system interrupt source
+
 fn sum(range: &[u8]) -> u8 {
     use core::num::Wrapping;
     range
@@ -89,15 +135,14 @@ fn mpsearch() -> Option<&'static mp> {
     }
 
     let bda = p2v(paddr::from_raw(0x400).unwrap()).as_ptr::<u8>();
-    let mut p: usize =
-        unsafe { (*bda.offset(0x0F) as usize) << 8 | (*bda.offset(0x0E) as usize) << 4 };
+    let mut p: usize = unsafe { (*bda.add(0x0F) as usize) << 8 | (*bda.add(0x0E) as usize) << 4 };
     if p != 0 {
         let range = mps_from_paddr(p, 1024 / 16);
         if let Some(r) = mpsearch1(range) {
             return Some(r);
         }
     } else {
-        p = unsafe { ((*bda.offset(0x14) as usize) << 8 | (*bda.offset(0x13) as usize)) * 1024 };
+        p = unsafe { ((*bda.add(0x14) as usize) << 8 | (*bda.add(0x13) as usize)) * 1024 };
         let range = mps_from_paddr(p, 1024 / 16);
         if let Some(r) = mpsearch1(range) {
             return Some(r);
@@ -132,20 +177,6 @@ fn mpconfig() -> Result<(&'static mp, &'static mpconf), &'static str> {
     Ok((mp, conf))
 }
 
-// be careful to use !
-pub static mut ncpu: usize = 0;
-pub static mut cpus: [CPU; MAX_NCPU] = [CPU::new(); MAX_NCPU];
-pub static mut ioapicid: u8 = 0;
-
-// Table entry types
-const MPPROC: u8 = 0x00; // One per processor
-const MPBUS: u8 = 0x01; // One per bus
-const MPIOAPIC: u8 = 0x02; // One per I/O APIC
-const MPIOINTR: u8 = 0x03; // One per bus interrupt source
-const MPLINTR: u8 = 0x04; // One per system interrupt source
-
-const MAX_NCPU: usize = 8;
-
 pub fn mp_init() {
     {
         use core::mem::size_of;
@@ -165,16 +196,18 @@ pub fn mp_init() {
             p.increase(1);
             p.cast()
         };
-        let e = (conf as *const mpconf as *const u8).offset(conf.length as isize);
+        let e = (conf as *const mpconf as *const u8).add(conf.length as usize);
         assert!(!p.is_null());
 
         use core::mem::size_of;
+        let mut ncpu = 0;
         while p.get() < e {
             match *p.get() {
                 MPPROC => {
                     let proc: Ptr<mpproc> = p.cast();
-                    if ncpu < MAX_NCPU {
-                        cpus[ncpu].apicid = (*proc.get()).apicid;
+                    if ncpu < param::NCPU {
+                        let apicid = (*proc.get()).apicid;
+                        CPU_ARRAY.add(ncpu, apicid);
                         ncpu += 1;
                     }
                     p.increase_bytes(size_of::<mpproc>()).unwrap();
@@ -206,7 +239,16 @@ pub fn mp_init() {
         x86::outb(0x23, x86::inb(0x23) | 1); // Mask external interrupts.
     }
 
-    println!("ncpu = {}", unsafe { ncpu });
-    println!("cpus = {:?}", unsafe { &cpus[..ncpu] });
+    println!("ncpu = {}", unsafe { CPU_ARRAY.len() });
+    unsafe {
+        for c in CPU_ARRAY.slice().iter() {
+            match c.as_ref() {
+                Some(c) => {
+                    println!("cpuid = {}, apicid = {}", c.id, c.apicid);
+                }
+                None => {}
+            }
+        }
+    }
     println!("lapic = {:?}", unsafe { lapic::lapic });
 }

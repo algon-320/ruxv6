@@ -2,6 +2,8 @@ use core::num::Wrapping;
 
 use super::kalloc;
 use super::mmu;
+use super::mp;
+use super::proc;
 use super::utils;
 use super::utils::address::{
     p2v, p2v_raw, paddr, paddr_pg, paddr_raw, v2p, v2p_raw, vaddr, vaddr_pg, vaddr_raw,
@@ -9,8 +11,8 @@ use super::utils::address::{
 use super::utils::pointer::Ptr;
 use super::x86;
 
-type PageDirEntry = u32;
-type PageTableEntry = u32;
+pub type PageDirEntry = u32;
+pub type PageTableEntry = u32;
 
 const EXTMEM: usize = 0x100000; // Start of extended memory
 const PHYSTOP: usize = 0xE000000; // Top physical memory
@@ -27,6 +29,31 @@ lazy_static! {
 }
 
 //------------------------------------------------------------------------------
+
+// Set up CPU's kernel segment descriptors.
+// Run once on entry on each CPU.
+pub fn seg_init() {
+    let idx = proc::mycpu().cpuid();
+    let c = unsafe { mp::CPU_ARRAY.borrow_mut(idx) };
+
+    // Map "logical" addresses to virtual addresses using identity map.
+    // Cannot share a CODE descriptor for both kernel and user
+    // because it would have to have DPL_USR, but the CPU forbids
+    // an interrupt from CPL=0 to DPL=3.
+    {
+        use mmu::seg::*;
+        c.gdt[KCODE] = mmu::segdesc::new(STA_X | STA_R, 0, 0xffffffff, 0);
+        c.gdt[KDATA] = mmu::segdesc::new(STA_W, 0, 0xffffffff, 0);
+        c.gdt[UCODE] = mmu::segdesc::new(STA_X | STA_R, 0, 0xffffffff, DPL_USER);
+        c.gdt[UDATA] = mmu::segdesc::new(STA_W, 0, 0xffffffff, DPL_USER);
+        x86::lgdt(
+            &mut c.gdt[0] as *mut mmu::segdesc,
+            core::mem::size_of_val(&c.gdt) as u16,
+        );
+    }
+
+    println!("mycpu: {:?}", c);
+}
 
 // Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,

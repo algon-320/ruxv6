@@ -4,6 +4,7 @@
 #![feature(global_asm)]
 #![feature(asm)]
 #![feature(start)]
+#![feature(ptr_offset_from)]
 
 //------------------------------------------------------------------------------
 
@@ -25,12 +26,16 @@ mod vga_buffer;
 mod console;
 mod file;
 mod fs;
+mod ioapic;
 mod kalloc;
 mod lapic;
 mod mmu;
 mod mp;
+mod param;
+mod pipe;
 mod proc;
 mod traps;
+mod uart;
 mod vm;
 mod x86;
 
@@ -79,8 +84,14 @@ pub extern "C" fn main() {
     // interrupt controller
     lapic::lapic_init();
 
+    // segment descriptors
+    vm::seg_init();
+
     // console hardware
-    console::console_init();
+    // console::console_init();
+
+    // serial port
+    // uart::uart_init();
 
     unimplemented!();
 

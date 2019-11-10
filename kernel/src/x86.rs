@@ -1,30 +1,71 @@
 bitflags! {
     pub struct EFlags: u32 {
-/* 0 */ const CF = 0b00000001u32;
-/* 2 */ const PF = 0b00000100u32;
-/* 4 */ const AF = 0b00010000u32;
-/* 6 */ const ZF = 0b01000000u32;
-/* 7 */ const SF = 0b10000000u32;
-/* 8 */ const TF = 0b00000001u32 << 8;
-/* 9 */ const IF = 0b00000010u32 << 8;
-/* 10 */ const DF = 0b00000100u32 << 8;
-/* 11 */ const OF = 0b00001000u32 << 8;
-/* 12-13 */ const IOPL = 0b00110000u32 << 8;
-/* 14 */ const NT = 0b01000000u32 << 8;
-/* 16 */ const RF = 0b00000001u32 << 16;
-/* 17 */ const VM = 0b00000010u32 << 16;
-/* 18 */ const AC = 0b00000100u32 << 16;
-/* 19 */ const VIF = 0b00001000u32 << 16;
-/* 20 */ const VIP = 0b00010000u32 << 16;
-/* 21 */ const ID = 0b00100000u32 << 16;
+/* 0 */ const CF = 1 << 0;
+/* 1 */ const _reserved_1 = 1 << 1;
+/* 2 */ const PF = 1 << 2;
+/* 3 */ const _reserved_2 = 1 << 3;
+/* 4 */ const AF = 1 << 4;
+/* 5 */ const _reserved_3 = 1 << 5;
+/* 6 */ const ZF = 1 << 6;
+/* 7 */ const SF = 1 << 7;
+/* 8 */ const TF = 1 << 8;
+/* 9 */ const IF = 1 << 9;
+/* 10 */ const DF = 1 << 10;
+/* 11 */ const OF = 1 << 11;
+/* 12-13 */ const IOPL = 3 << 12;
+/* 14 */ const NT = 1 << 14;
+/* 15 */ const _reserved_4 = 1 << 15;
+/* 16 */ const RF = 1 << 16;
+/* 17 */ const VM = 1 << 17;
+/* 18 */ const AC = 1 << 18;
+/* 19 */ const VIF = 1 << 19;
+/* 20 */ const VIP = 1 << 20;
+/* 21 */ const ID = 1 << 21;
     }
+}
+
+// Layout of the trap frame built on the stack by the
+// hardware and by trapasm.S, and passed to trap().
+pub struct trapframe {
+    // registers as pushed by pusha
+    edi: u32,
+    esi: u32,
+    ebp: u32,
+    oesp: u32,
+    ebx: u32,
+    edx: u32,
+    ecx: u32,
+    eax: u32,
+
+    // rest of trap frame
+    gs: u16,
+    padding1: u16,
+    fs: u16,
+    padding2: u16,
+    es: u16,
+    padding3: u16,
+    ds: u16,
+    padding4: u16,
+    trapno: u32,
+
+    // bellow here defined by x86 hardware
+    err: u32,
+    epi: u32,
+    cs: u16,
+    padding5: u16,
+    eflags: u32,
+
+    // below here only when crossing rings, such as from user to kernel
+    esp: u32,
+    ss: u16,
+    padding6: u16,
 }
 
 #[inline]
 pub fn readflags() -> EFlags {
     let mut tmp: u32 = 0;
     unsafe {
-        asm!("pushfl; popl %0"
+        asm!("pushfl; popl $0"
                 : "=r"(tmp)
                 ::: "volatile");
     }
@@ -172,6 +213,23 @@ pub fn lcr3(val: usize) {
         asm!("movl $0, %cr3"
                 :
                 : "r" (val)
+                :
+                : "volatile");
+    }
+}
+
+#[inline]
+pub fn lgdt(p: *mut crate::mmu::segdesc, size: u16) {
+    let pd = [
+        size - 1,
+        ((p as usize) & 0xffff) as u16,
+        (((p as usize) >> 16) & 0xffff) as u16,
+    ];
+    let ptr = &pd as *const u16;
+    unsafe {
+        asm!("lgdt ($0)"
+                :
+                : "r" (ptr)
                 :
                 : "volatile");
     }

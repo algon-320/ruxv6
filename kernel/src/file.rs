@@ -1,6 +1,22 @@
 use super::fs;
+use super::pipe;
 
 use spin::Mutex;
+
+pub enum FileType {
+    FD_NONE,
+    FD_PIPE,
+    FD_INODE,
+}
+pub struct File {
+    file_type: FileType,
+    ref_count: i32,
+    readable: u8,
+    writable: u8,
+    pipe: *const pipe::Pipe,
+    ip: *const Inode,
+    off: usize,
+}
 
 // Copy of disk inode
 #[repr(C)]

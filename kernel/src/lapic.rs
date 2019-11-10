@@ -36,12 +36,12 @@ const TDCR: usize = (0x03E0 / 4); // Timer Divide Configuration
 
 fn lapic_write(index: usize, value: u32) {
     unsafe {
-        core::ptr::write_volatile(lapic.offset(index as isize), value);
-        core::ptr::read_volatile(lapic.offset(ID as isize)); // wait for to finish, by reading
+        core::ptr::write_volatile(lapic.add(index), value);
+        core::ptr::read_volatile(lapic.add(ID)); // wait for to finish, by reading
     }
 }
 fn lapic_read(index: usize) -> u32 {
-    unsafe { core::ptr::read_volatile(lapic.offset(index as isize)) }
+    unsafe { core::ptr::read_volatile(lapic.add(index)) }
 }
 
 pub fn lapic_init() {
@@ -87,4 +87,12 @@ pub fn lapic_init() {
 
     // Enable interrupts on the APIC (but not on the processor).
     lapic_write(TPR, 0);
+}
+
+pub unsafe fn lapicid() -> u8 {
+    if lapic.is_null() {
+        0
+    } else {
+        (lapic_read(ID) >> 24) as u8
+    }
 }
