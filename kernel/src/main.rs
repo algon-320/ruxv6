@@ -32,6 +32,7 @@ mod lapic;
 mod mmu;
 mod mp;
 mod param;
+mod picirq;
 mod pipe;
 mod proc;
 mod traps;
@@ -86,6 +87,9 @@ pub extern "C" fn main() {
 
     // segment descriptors
     vm::seg_init();
+
+    // disable pic
+    picirq::pic_init();
 
     // console hardware
     // console::console_init();
