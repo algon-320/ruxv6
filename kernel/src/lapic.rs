@@ -64,7 +64,7 @@ pub fn lapic_init() {
     lapic_write(LINT0, MASKED);
     lapic_write(LINT1, MASKED);
 
-    if lapic_read(VER) >> 16 & 0xFF >= 4 {
+    if ((lapic_read(VER) >> 16) & 0xFF) >= 4 {
         lapic_write(PCINT, MASKED);
     }
 
@@ -81,7 +81,7 @@ pub fn lapic_init() {
     // Send an Init Level De-Assert to synchronise arbitration ID's.
     lapic_write(ICRHI, 0);
     lapic_write(ICRLO, BCAST | INIT | LEVEL);
-    while lapic_read(ICRLO) & DELIVS != 0 {
+    while (lapic_read(ICRLO) & DELIVS) != 0 {
         x86::nop();
     }
 
