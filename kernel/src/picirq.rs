@@ -6,6 +6,7 @@ const IO_PIC2: u16 = 0xA0; // Slave (IRQs 8-15)
 
 // Don't use the 8259A interrupt controllers.  Xv6 assumes SMP hardware.
 pub fn pic_init() {
+    // https://wiki.osdev.org/8259_PIC#Disabling
     x86::outb(IO_PIC1 + 1, 0xFF);
     x86::outb(IO_PIC2 + 1, 0xFF);
 }
