@@ -95,7 +95,7 @@ pub extern "C" fn main() {
     ioapic::ioapic_init();
 
     // console hardware
-    // console::console_init();
+    console::console_init();
 
     // serial port
     // uart::uart_init();
