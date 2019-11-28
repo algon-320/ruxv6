@@ -1,8 +1,24 @@
+use super::ioapic;
+use super::lapic;
+use super::traps;
 use super::x86;
 
 const COM1: u16 = 0x3f8;
 
 static mut uart: bool = false; // is there a uart?
+
+pub fn putc(c: u8) {
+    if unsafe { !uart } {
+        return;
+    }
+    for _ in 0..128 {
+        if x86::inb(COM1 + 5) & 0x20 > 0 {
+            break;
+        }
+        lapic::microdelay(10);
+    }
+    x86::outb(COM1 + 0, c);
+}
 
 pub fn uart_init() {
     // Turn off the FIFO
@@ -28,6 +44,10 @@ pub fn uart_init() {
     // enable interrupts.
     x86::inb(COM1 + 2);
     x86::inb(COM1 + 0);
+    ioapic::ioapic_enable(traps::IRQ_COM1, 0);
 
-    unimplemented!()
+    // Announce that we're here.
+    for c in b"uart_init: we're here.\n".iter() {
+        putc(*c);
+    }
 }

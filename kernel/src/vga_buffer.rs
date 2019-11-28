@@ -43,6 +43,7 @@ struct ScreenCell {
 
 const HEIGHT: usize = 25;
 const WIDTH: usize = 80;
+const CRTPORT: u16 = 0x3D4;
 
 #[repr(transparent)]
 struct Buffer {
@@ -138,10 +139,10 @@ impl Writer {
     fn update_cursor(&self) {
         // from https://wiki.osdev.org/Text_Mode_Cursor
         let pos = self.row_position * WIDTH + self.column_position;
-        x86::outb(0x3D4, trunc8!(0x0F));
-        x86::outb(0x3D5, trunc8!(pos & 0xFF));
-        x86::outb(0x3D4, trunc8!(0x0E));
-        x86::outb(0x3D5, trunc8!((pos >> 8) & 0xFF));
+        x86::outb(CRTPORT + 0, trunc8!(0x0F));
+        x86::outb(CRTPORT + 1, trunc8!(pos & 0xFF));
+        x86::outb(CRTPORT + 0, trunc8!(0x0E));
+        x86::outb(CRTPORT + 1, trunc8!((pos >> 8) & 0xFF));
     }
 
     fn change_color(&mut self, color: ColorCode) {

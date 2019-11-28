@@ -89,6 +89,10 @@ pub fn lapic_init() {
     lapic_write(TPR, 0);
 }
 
+// Spin for a given number of microseconds.
+// On read hardware would want to tune this dynamically.
+pub fn microdelay(us: u32) {}
+
 pub unsafe fn lapicid() -> u8 {
     if lapic.is_null() {
         0

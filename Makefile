@@ -19,10 +19,10 @@ kernel-debug_dummy:
 	make -C kernel kernel-debug
 
 qemu: xv6.img fs.img
-	qemu-system-i386 -drive file=xv6.img,index=0,media=disk,format=raw -drive file=fs.img,index=1,media=disk,format=raw -smp 2 -m 512
+	qemu-system-i386 -drive file=xv6.img,index=0,media=disk,format=raw -drive file=fs.img,index=1,media=disk,format=raw -smp 2 -m 512 -serial mon:stdio
 
 qemu-debug: xv6-debug.img fs.img
-	qemu-system-i386 -drive file=xv6-debug.img,index=0,media=disk,format=raw -drive file=fs.img,index=1,media=disk,format=raw -smp 2 -m 512
+	qemu-system-i386 -drive file=xv6-debug.img,index=0,media=disk,format=raw -drive file=fs.img,index=1,media=disk,format=raw -smp 2 -m 512 -serial mon:stdio
 
 GDBPORT = $(shell expr `id -u` % 5000 + 25000)
 qemu-gdb: xv6-debug.img fs.img

@@ -98,7 +98,7 @@ pub extern "C" fn main() {
     console::console_init();
 
     // serial port
-    // uart::uart_init();
+    uart::uart_init();
 
     unimplemented!();
 

@@ -31,18 +31,18 @@ pub struct InodeContent {
 
 // in-memory copy of an inode
 pub struct Inode {
-    dev: u32,
-    inum: u32,
-    refcnt: i32,
-    valid: bool,
-    content: Mutex<InodeContent>,
+    pub dev: u32,
+    pub inum: u32,
+    pub refcnt: i32,
+    pub valid: bool,
+    pub content: Mutex<InodeContent>,
 }
 
 // table mapping major device number to
 // device functions
 #[derive(Debug, Clone, Copy)]
 pub struct devsw {
-    pub read: Option<fn(*const Inode) -> *const [u8]>,
+    pub read: Option<fn(*const Inode, usize) -> *const [u8]>,
     pub write: Option<fn(*const Inode, *const [u8])>,
 }
 
