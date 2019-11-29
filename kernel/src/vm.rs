@@ -42,12 +42,12 @@ pub fn seg_init() {
     // an interrupt from CPL=0 to DPL=3.
     {
         use mmu::seg::*;
-        c.gdt[KCODE] = mmu::segdesc::new(STA_X | STA_R, 0, 0xffffffff, 0);
-        c.gdt[KDATA] = mmu::segdesc::new(STA_W, 0, 0xffffffff, 0);
-        c.gdt[UCODE] = mmu::segdesc::new(STA_X | STA_R, 0, 0xffffffff, DPL_USER);
-        c.gdt[UDATA] = mmu::segdesc::new(STA_W, 0, 0xffffffff, DPL_USER);
+        c.gdt[KCODE] = mmu::SegDesc::new(STA_X | STA_R, 0, 0xffffffff, 0);
+        c.gdt[KDATA] = mmu::SegDesc::new(STA_W, 0, 0xffffffff, 0);
+        c.gdt[UCODE] = mmu::SegDesc::new(STA_X | STA_R, 0, 0xffffffff, DPL_USER);
+        c.gdt[UDATA] = mmu::SegDesc::new(STA_W, 0, 0xffffffff, DPL_USER);
         x86::lgdt(
-            &mut c.gdt[0] as *mut mmu::segdesc,
+            &mut c.gdt[0] as *mut mmu::SegDesc,
             core::mem::size_of_val(&c.gdt) as u16,
         );
     }

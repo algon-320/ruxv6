@@ -13,11 +13,17 @@ pub mod seg {
     pub const TSS: usize = 5; // this process's task state
     pub const NUM: usize = 6;
 
+    pub const DPL_USER: u8 = 0x3; // User DPL
+
+    // Application segment type bits
     pub const STA_X: u8 = 0x8; // Executable
     pub const STA_W: u8 = 0x2; // Writable (non-executable segments)
     pub const STA_R: u8 = 0x2; // Readable     (executable segments)
 
-    pub const DPL_USER: u8 = 0x3; // User DPL
+    // System segment type bits
+    pub const STS_T32A: u8 = 0x9; // Available 32-bit TSS
+    pub const STS_IG32: u8 = 0xE; // 32-bit Interrupt Gate
+    pub const STS_TG32: u8 = 0xF; // 32-bit Trap Gate
 }
 
 pub const NPDENTRIES: usize = 1024; // # directory entries per page directory
@@ -29,33 +35,34 @@ const PDXSHIFT: usize = 22; // offset of PDX in a linear address
 
 pub type Page = [u8; PGSIZE];
 
+// Segment Descriptor
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct segdesc(u64);
+pub struct SegDesc(u64);
 
-impl segdesc {
+impl SegDesc {
     pub fn zero() -> Self {
-        segdesc(0)
+        SegDesc(0)
     }
     pub fn new(ty: u8, base: u32, lim: u32, dpl: u8) -> Self {
         let ty = ty as u64;
         let base = base as u64;
         let lim = lim as u64;
         let dpl = dpl as u64;
-        segdesc(
-            (((lim >> 12) & 0xffff) << 48)
-                | ((base & 0xffff) << 32)
-                | (((base >> 16) & 0xff) << 24)
-                | (ty << 20)
-                | (1 << 19)
-                | (dpl << 17)
-                | (1 << 16)
-                | ((lim >> 28) << 12)
-                | (0 << 11)
-                | (0 << 10)
-                | (1 << 9)
-                | (1 << 8)
-                | (base >> 24) << 0,
+        SegDesc(
+            (((base >> 24) & 0xff) << 56)
+                | (1 << 55)
+                | (1 << 54)
+                | (0 << 53)
+                | (0 << 52)
+                | (((lim >> 28) & 0x0f) << 48)
+                | (1 << 47)
+                | ((dpl & 0x03) << 45)
+                | (1 << 44)
+                | ((ty & 0x0f) << 40)
+                | (((base >> 16) & 0xff) << 32)
+                | ((base & 0xffff) << 16)
+                | (lim >> 12 & 0xffff),
         )
     }
     // functions to read / write segment descriptor
@@ -144,6 +151,75 @@ impl taskstate {
             t: 0,
             iomb: 0,
         }
+    }
+}
+
+// Gate Descriptor for interrupts and traps
+#[derive(Debug, Copy, Clone)]
+#[repr(transparent)]
+pub struct GateDesc(u64);
+impl GateDesc {
+    pub const fn new() -> Self {
+        GateDesc(0)
+    }
+
+    pub fn get_offfset(&self) -> u32 {
+        (((self.0 >> 48) & 0xffff) | (self.0 & 0xffff)) as u32
+    }
+    pub fn set_offset(&mut self, off: u32) {
+        let off_lower = (off & 0xffff) as u64;
+        let off_upper = ((off >> 16) & 0xffff) as u64;
+        const mask: u64 = !((0xffff << 48) | 0xffff);
+        self.0 = (self.0 & mask) | off_lower | (off_upper << 48);
+    }
+
+    pub fn get_cs(&self) -> u16 {
+        ((self.0 >> 16) & 0xffff) as u16
+    }
+    pub fn set_cs(&mut self, cs: u16) {
+        const mask: u64 = !(0xffff << 16);
+        self.0 = (self.0 & mask) | (cs as u64) << 16;
+    }
+
+    pub fn get_args(&self) -> u8 {
+        ((self.0 >> 32) & 0x1f) as u8
+    }
+    pub fn set_args(&mut self, args: u8) {
+        const mask: u64 = !(0x1f << 32);
+        self.0 = (self.0 & mask) | (args as u64) << 32;
+    }
+
+    pub fn get_type(&self) -> u8 {
+        ((self.0 >> 40) & 0x0f) as u8
+    }
+    pub fn set_type(&mut self, ty: u8) {
+        const mask: u64 = !(0x0f << 40);
+        self.0 = (self.0 & mask) | (ty as u64) << 40;
+    }
+
+    pub fn get_dpl(&self) -> u8 {
+        ((self.0 >> 45) & 0x03) as u8
+    }
+    pub fn set_dpl(&mut self, dpl: u8) {
+        const mask: u64 = !(0x03 << 45);
+        self.0 = (self.0 & mask) | (dpl as u64) << 45;
+    }
+
+    pub fn get_p(&self) -> u8 {
+        ((self.0 >> 47) & 0x01) as u8
+    }
+    pub fn set_p(&mut self, p: u8) {
+        const mask: u64 = !(0x01 << 47);
+        self.0 = (self.0 & mask) | (p as u64) << 47;
+    }
+
+    pub fn set_gate(&mut self, istrap: bool, sel: u16, off: u32, dpl: u8) {
+        self.set_offset(off);
+        self.set_cs(sel);
+        self.set_args(0);
+        self.set_type(if istrap { seg::STS_TG32 } else { seg::STS_IG32 });
+        self.set_dpl(dpl);
+        self.set_p(1);
     }
 }
 

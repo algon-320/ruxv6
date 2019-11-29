@@ -13,7 +13,7 @@ pub struct CPU {
     pub apicid: u8,                         // Local APIC ID
     pub scheduler: *const context,          // swtch() here to enter scheduler
     pub ts: mmu::taskstate,                 // Used by x86 to find stack for interrupt
-    pub gdt: [mmu::segdesc; mmu::seg::NUM], // x86 global descriptor table
+    pub gdt: [mmu::SegDesc; mmu::seg::NUM], // x86 global descriptor table
     pub started: bool,                      // Has the CPU started?
     pub ncli: i32,                          // Depth of pushcli nesting.
     pub intena: bool,                       // Were interrupts enabled before pushcli?
@@ -27,7 +27,7 @@ impl CPU {
             apicid,
             scheduler: core::ptr::null(),
             ts: mmu::taskstate::new(),
-            gdt: [mmu::segdesc::zero(); mmu::seg::NUM],
+            gdt: [mmu::SegDesc::zero(); mmu::seg::NUM],
             started: false,
             ncli: 0,
             intena: false,
@@ -82,6 +82,10 @@ pub struct proc {
     ofile: [file::File; param::NOFILE], // Open files
     cwd: *const file::Inode,            // Current directory
     name: [u8; 16],                     // Process name (debugging)
+}
+
+pub fn pinit() {
+    // initilock
 }
 
 // Must be called with interrupts disabled to avoid the caller being

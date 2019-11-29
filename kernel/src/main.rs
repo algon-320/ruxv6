@@ -100,6 +100,12 @@ pub extern "C" fn main() {
     // serial port
     uart::uart_init();
 
+    // process table
+    proc::pinit();
+
+    // trap vectors
+    traps::tvinit();
+
     unimplemented!();
 
     loop {}

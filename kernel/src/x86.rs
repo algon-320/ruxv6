@@ -219,7 +219,7 @@ pub fn lcr3(val: usize) {
 }
 
 #[inline]
-pub fn lgdt(p: *mut crate::mmu::segdesc, size: u16) {
+pub fn lgdt(p: *mut crate::mmu::SegDesc, size: u16) {
     let pd = [
         size - 1,
         ((p as usize) & 0xffff) as u16,

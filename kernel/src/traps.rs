@@ -1,3 +1,7 @@
+use super::mmu;
+
+use spin::Mutex;
+
 // x86 trap and interrupt constants.
 
 // Processor-defined:
@@ -24,8 +28,8 @@ pub const T_SIMDERR: u32 = 19; // SIMD floating point error
 
 // These are arbitrarily chosen, but with care not to overlap
 // processor defined exceptions or interrupt vectors.
-pub const T_SYSCALL: u32 = 64; // system call
-pub const T_DEFAULT: u32 = 500; // catchall
+pub const T_SYSCALL: usize = 64; // system call
+pub const T_DEFAULT: usize = 500; // catchall
 
 pub const T_IRQ0: u32 = 32; // IRQ 0 corresponds to int T_IRQ
 
@@ -35,3 +39,31 @@ pub const IRQ_COM1: u32 = 4;
 pub const IRQ_IDE: u32 = 14;
 pub const IRQ_ERROR: u32 = 19;
 pub const IRQ_SPURIOUS: u32 = 31;
+
+static mut idt: [mmu::GateDesc; 256] = [mmu::GateDesc::new(); 256];
+extern "C" {
+    static vectors: [u32; 256];
+}
+global_asm!(include_str!("vectors.S"));
+
+lazy_static! {
+    static ref ticks: Mutex<u32> = Mutex::new(0);
+}
+
+pub fn tvinit() {
+    for i in 0..256 {
+        unsafe {
+            idt[i].set_gate(false, (mmu::seg::KCODE << 3) as u16, vectors[i], 0);
+        }
+    }
+
+    // set system call trap handler
+    unsafe {
+        idt[T_SYSCALL].set_gate(
+            true,
+            (mmu::seg::KCODE << 3) as u16,
+            vectors[T_SYSCALL],
+            mmu::seg::DPL_USER,
+        );
+    }
+}
