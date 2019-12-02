@@ -59,15 +59,11 @@ struct mpioapic {
     addr: *const u32, // I/O APIC address
 }
 
-use core::cell::Cell;
-
 // be careful to use !
 pub static mut CPU_ARRAY: CPUArray = CPUArray::new();
-// pub static mut ncpu: usize = 0;
-// pub static mut cpus: [Option<CPU>; param::NCPU] = [None, None, None, None, None, None, None, None];
-
 pub static mut ioapicid: u8 = 0;
 
+#[derive(Debug)]
 pub struct CPUArray {
     ncpu: usize,
     cpus: [Option<CPU>; param::NCPU],
@@ -187,7 +183,7 @@ pub fn mp_init() {
     let mut is_mp = true;
 
     unsafe {
-        // it's safe because now only 'this' processor is moving.
+        // it's safe because now only 'this' processor is running.
         lapic::lapic = conf.lapicaddr;
 
         let mut p: Ptr<u8> = {
