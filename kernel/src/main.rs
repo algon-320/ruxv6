@@ -55,7 +55,7 @@ extern "C" {
 
 #[used]
 #[no_mangle]
-#[link_section = ".data.entrypgdir"]
+#[link_section = ".rodata.entrypgdir"]
 pub static entrypgdir: [PageDirEntry; mmu::NPDENTRIES] = assigned_array![
     0; mmu::NPDENTRIES;
     // Map VA's [0, 4MB) to PA's [0, 4MB)

@@ -13,6 +13,8 @@ SECTIONS {
     PROVIDE(etext = .);	/* Define the 'etext' symbol to this value */
 
     .rodata : {
+        . = ALIGN(4096);
+        *(.rodata.entrypgdir)
         *(.rodata .rodata.* .gnu.linkonce.r.*)
     }
 
@@ -37,8 +39,6 @@ SECTIONS {
 
     /* The data segment */
     .data : {
-        . = ALIGN(4096);
-        *(.data.entrypgdir)
         *(.data)
     }
 
